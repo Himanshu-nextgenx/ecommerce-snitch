@@ -40,3 +40,43 @@ export const register = async (req, res) => {
   });
   await generateToken(user, res, "User registered successfully");
 };
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await userModel.findOne({ email });  
+  if (!user) {
+    return res.status(400).json({
+      message: "User not found",
+    });
+  }       
+
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    return res.status(400).json({
+      message: "Invalid credentials",
+    });
+  }   
+  await generateToken(user, res, "User logged in successfully");
+              
+}
+
+export const googleAuthCallback = async (req, res) => {
+const {id, displayName, emails,photos} = req.user;
+const email = emails[0].value;
+const profilePic = photos[0].value;
+
+let user = await userModel.findOne({ email });
+if (!user) {
+  user = await userModel.create({
+  email,
+  googleId: id,
+  fullname: displayName,
+  
+  });
+}   
+const token = jwt.sign({ id: user._id }, config.jwtSecret, {
+  expiresIn: "1d",
+});
+res.cookie("token", token, { httpOnly: true });
+res.redirect("http://localhost:5173/");
+}

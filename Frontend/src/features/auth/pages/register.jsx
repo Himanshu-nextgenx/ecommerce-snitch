@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../hook/useAuth";
 import { Link, useNavigate } from "react-router";
+import ContinueWithGoogle from "../components/continuewithgoogle.jsx";
 
 const inputBaseClass =
   "w-full rounded-xl border border-yellow-500/20 bg-black/35 px-4 py-2.5 text-sm text-stone-100 outline-none transition duration-200 placeholder:text-stone-500 focus:border-yellow-400 focus:bg-black/50 focus:ring-2 focus:ring-yellow-400/30 sm:rounded-2xl sm:py-3";
@@ -251,6 +252,20 @@ const Register = () => {
                   Create Snitch Account
                 </button>
               </form>
+
+              <div className="mt-3">
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-yellow-500/15" />
+                  <span className="text-xs uppercase tracking-[0.3em] text-stone-500">
+                    or
+                  </span>
+                  <span className="h-px flex-1 bg-yellow-500/15" />
+                </div>
+
+                <div className="mt-3">
+                  <ContinueWithGoogle />
+                </div>
+              </div>
 
               <p className="mt-1 text-center text-sm text-stone-500 sm:mt-2.5">
                 Already part of Snitch?{" "}

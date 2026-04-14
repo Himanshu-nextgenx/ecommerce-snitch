@@ -11,12 +11,14 @@ const userSchema = new mongoose.Schema({
 
     contact:{
         type:String,
-        required:true,
-        unique:true,
+        required:false,
+        
     },
     password:{
         type:String,
-        required:true,      
+        required: function(){
+            return !this.googleId; // Password is required if googleId is not present
+        },      
     },
     fullname:{
         type:String,
@@ -27,8 +29,18 @@ role:{
     type:String,
     enum:["buyer","seller"],
     default:"buyer",
-}
-    
+},
+googleId:{
+    type:String,
+    unique:true,
+    sparse:true, // Allows multiple null values
+},
+profilePic:{
+    type:String,        
+},
+
+},{
+    timestamps:true,    
 
 
 })
