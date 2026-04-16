@@ -3,7 +3,7 @@ import userModel from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 
 const generateToken = (user, res, message) => {
-  const token = jwt.sign({ id: user._id }, config.jwtSecret, {
+  const token = jwt.sign({ id: user._id , role: user.role  }, config.jwtSecret, {
     expiresIn: "1d",
   });
   res.cookie("token", token);

@@ -1,16 +1,21 @@
 import express from "express";
 import morgan from "morgan";
 import config from "./config/config.js";
+import cookieParser from "cookie-parser";
+
+
 // import cors from "cors";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { dbconnection } from "./config/db.js";
 import authRouter from "./routes/auth.routes.js";
+import productRouter from "./routes/product.routes.js";
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan("dev"));
 
+app.use(cookieParser());
 dbconnection();
 app.use(passport.initialize());
 passport.use(
@@ -34,6 +39,7 @@ passport.use(
 //     }
 // ));
 app.use("/api/auth", authRouter);
+app.use("/api/products",productRouter)
 
 
 export default app;
