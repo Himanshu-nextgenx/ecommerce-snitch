@@ -34,3 +34,22 @@ export const createProduct = async (req, res) => {
     });
   }
 };
+
+
+export const getSellerProducts = async (req,res)=>{
+const seller = req.user
+    try {
+        const products = await productModel.find({ seller : seller.id})
+        res.status(200).json({
+            message:"seller product get successfully ",
+            products
+        })
+    } catch (error) {
+        res.status(400).json({
+            message:"not found  ",error
+
+        })
+
+
+    }
+}
