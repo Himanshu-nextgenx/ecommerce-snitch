@@ -4,7 +4,7 @@ import config from "./config/config.js";
 import cookieParser from "cookie-parser";
 
 
-// import cors from "cors";
+import cors from "cors";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { dbconnection } from "./config/db.js";
@@ -14,7 +14,10 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan("dev"));
-
+app.use(cors({
+  origin: "http://localhost:5173", // frontend URL
+  credentials: true
+}));
 app.use(cookieParser());
 dbconnection();
 app.use(passport.initialize());

@@ -6,7 +6,9 @@ const generateToken = (user, res, message) => {
   const token = jwt.sign({ id: user._id , role: user.role  }, config.jwtSecret, {
     expiresIn: "1d",
   });
-  res.cookie("token", token);
+  res.cookie("token", token,
+     {secure: false}
+  );
   res.status(200).json({
     message,
     token,
@@ -74,7 +76,7 @@ if (!user) {
   
   });
 }   
-const token = jwt.sign({ id: user._id }, config.jwtSecret, {
+const token = jwt.sign({ id: user._id ,role: user.role}, config.jwtSecret, {
   expiresIn: "1d",
 });
 res.cookie("token", token, { httpOnly: true });
