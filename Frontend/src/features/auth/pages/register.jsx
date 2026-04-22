@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router";
 import ContinueWithGoogle from "../components/continuewithgoogle.jsx";
 
 const inputBaseClass =
-  "w-full border border-[#E5DED4] bg-[#fbf9f6] px-3 py-1 text-[13px] text-[#1b1c1a] outline-none transition placeholder:text-[#B5ADA3] focus:border-[#C9A96E] focus:bg-white";
+  "w-full border border-[#E5DED4] bg-[#fbf9f6] px-3.5 py-2 text-sm text-[#1b1c1a] outline-none transition placeholder:text-[#B5ADA3] focus:border-[#C9A96E] focus:bg-white";
 
 const Register = () => {
   const { handleRegister } = useAuth();
@@ -51,12 +51,12 @@ const Register = () => {
         className="min-h-screen selection:bg-[#C9A96E]/30"
         style={{ backgroundColor: "#fbf9f6", fontFamily: "'Inter', sans-serif" }}
       >
-        <section className="mx-auto grid min-h-screen max-w-7xl px-5 lg:grid-cols-[1.02fr_0.98fr] lg:px-10 xl:px-16">
-          <div className="hidden py-2 lg:block">
-            <div className="relative h-[calc(100vh-1rem)] min-h-[360px] max-h-[560px] overflow-hidden bg-[#1b1c1a] ring-1 ring-[#C9A96E]/25">
+        <section className="mx-auto grid min-h-screen max-w-7xl px-8 lg:grid-cols-[1.04fr_0.96fr] lg:px-16 xl:px-24">
+          <div className="hidden py-10 lg:block">
+            <div className="relative h-full min-h-[calc(100vh-5rem)] overflow-hidden bg-[#1b1c1a] ring-1 ring-[#C9A96E]/25">
               <img
                 alt="Snitch seller editorial"
-                className="h-full w-full object-cover object-center opacity-95"
+                className="h-full w-full object-cover object-[center_32%] opacity-95"
                 src="https://images.unsplash.com/photo-1627292441194-0280c19e74e4?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1b1c1a]/55 via-[#1b1c1a]/5 to-transparent" />
@@ -74,7 +74,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="flex flex-col justify-start py-2 lg:pl-10">
+          <div className="flex flex-col justify-center py-8 lg:pl-14">
             <div className="flex items-center gap-5">
               <button
                 aria-label="Go back"
@@ -92,30 +92,30 @@ const Register = () => {
               </span>
             </div>
 
-            <div className="pt-6 pb-1">
-              <p className="text-[9px] font-medium uppercase tracking-[0.28em] text-[#C9A96E]">
+            <div className="pt-10 pb-1">
+              <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-[#C9A96E]">
                 New Account
               </p>
               <h1
-                className="mt-1 text-3xl font-light leading-tight text-[#1b1c1a] lg:text-[2.1rem]"
+                className="mt-2 text-4xl font-light leading-tight text-[#1b1c1a] lg:text-[2.7rem]"
                 style={{ fontFamily: "'Cormorant Garamond', serif" }}
               >
                 Join Snitch
               </h1>
-              <div className="mt-2 h-px w-10 bg-[#C9A96E]" />
-              <p className="mt-2 max-w-md text-[11px] leading-4 text-[#7A6E63]">
+              <div className="mt-3 h-px w-12 bg-[#C9A96E]" />
+              <p className="mt-3 max-w-md text-sm leading-5 text-[#7A6E63]">
                 Create your profile and choose whether you are entering as a
                 shopper or building your seller vault.
               </p>
 
-              <div className="mt-2.5 w-full border-t border-[#E5DED4] pt-2.5">
+              <div className="mt-5 w-full border-t border-[#E5DED4] pt-5">
                 <form
-                  className="grid gap-2 sm:grid-cols-2"
+                  className="grid gap-3 sm:grid-cols-2"
                   onSubmit={handleSubmit}
                 >
                   <div className="sm:col-span-2">
                     <label
-                      className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
+                      className="mb-1 block text-[11px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
                       htmlFor="fullname"
                     >
                       Full Name
@@ -134,7 +134,7 @@ const Register = () => {
 
                   <div>
                     <label
-                      className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
+                      className="mb-1 block text-[11px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
                       htmlFor="contact"
                     >
                       Contact
@@ -153,7 +153,7 @@ const Register = () => {
 
                   <div>
                     <label
-                      className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
+                      className="mb-1 block text-[11px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
                       htmlFor="email"
                     >
                       Email
@@ -172,7 +172,7 @@ const Register = () => {
 
                   <div className="sm:col-span-2">
                     <label
-                      className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
+                      className="mb-1 block text-[11px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]"
                       htmlFor="password"
                     >
                       Password
@@ -190,11 +190,11 @@ const Register = () => {
                   </div>
 
                   <fieldset className="sm:col-span-2">
-                    <legend className="mb-1 block text-[10px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]">
+                    <legend className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.18em] text-[#1b1c1a]">
                       Account Type
                     </legend>
                     <div className="grid gap-3 md:grid-cols-2">
-                      <label className="flex cursor-pointer items-start gap-2 border border-[#E5DED4] bg-[#fbf9f6] px-2.5 py-1.5 transition hover:border-[#C9A96E]">
+                      <label className="flex cursor-pointer items-start gap-2.5 border border-[#E5DED4] bg-[#fbf9f6] px-3 py-2.5 transition hover:border-[#C9A96E]">
                         <input
                           checked={formData.isSeller === "yes"}
                           className="mt-1 h-4 w-4 accent-[#C9A96E]"
@@ -204,16 +204,16 @@ const Register = () => {
                           value="yes"
                         />
                         <span>
-                          <span className="block text-xs font-medium text-[#1b1c1a]">
+                          <span className="block text-sm font-medium text-[#1b1c1a]">
                             Seller
                           </span>
-                          <span className="text-[10px] leading-3 text-[#7A6E63]">
+                          <span className="text-[11px] leading-4 text-[#7A6E63]">
                             Create listings and manage your vault.
                           </span>
                         </span>
                       </label>
 
-                      <label className="flex cursor-pointer items-start gap-2 border border-[#E5DED4] bg-[#fbf9f6] px-2.5 py-1.5 transition hover:border-[#C9A96E]">
+                      <label className="flex cursor-pointer items-start gap-2.5 border border-[#E5DED4] bg-[#fbf9f6] px-3 py-2.5 transition hover:border-[#C9A96E]">
                         <input
                           checked={formData.isSeller === "no"}
                           className="mt-1 h-4 w-4 accent-[#C9A96E]"
@@ -223,10 +223,10 @@ const Register = () => {
                           value="no"
                         />
                         <span>
-                          <span className="block text-xs font-medium text-[#1b1c1a]">
+                          <span className="block text-sm font-medium text-[#1b1c1a]">
                             Buyer
                           </span>
-                          <span className="text-[10px] leading-3 text-[#7A6E63]">
+                          <span className="text-[11px] leading-4 text-[#7A6E63]">
                             Discover and save curated pieces.
                           </span>
                         </span>
@@ -235,14 +235,14 @@ const Register = () => {
                   </fieldset>
 
                   <button
-                    className="bg-[#1b1c1a] px-8 py-2 text-[10px] font-medium uppercase tracking-[0.3em] text-[#fbf9f6] transition-all duration-300 hover:bg-[#C9A96E] hover:text-[#1b1c1a] sm:col-span-2"
+                    className="bg-[#1b1c1a] px-8 py-3 text-[11px] font-medium uppercase tracking-[0.3em] text-[#fbf9f6] transition-all duration-300 hover:bg-[#C9A96E] hover:text-[#1b1c1a] sm:col-span-2"
                     type="submit"
                   >
                     Create Account
                   </button>
                 </form>
 
-                <div className="my-2 flex items-center gap-4">
+                <div className="my-4 flex items-center gap-4">
                   <span className="h-px flex-1 bg-[#E5DED4]" />
                   <span className="text-[10px] font-medium uppercase tracking-[0.24em] text-[#B5ADA3]">
                     or
@@ -252,7 +252,7 @@ const Register = () => {
 
                 <ContinueWithGoogle className="rounded-none border-[#E5DED4] shadow-none" />
 
-                <p className="mt-2 text-center text-xs text-[#7A6E63]">
+                <p className="mt-4 text-center text-sm text-[#7A6E63]">
                   Already part of Snitch?{" "}
                   <Link className="font-medium text-[#C9A96E]" to="/login">
                     Sign in
