@@ -1,11 +1,17 @@
 import { Router } from "express";
 import { upload } from "../services/storage.service.js";
 import {
+  // addProductVariant,
   createProduct,
+  getAllProducts,
+  getProductById,
   getSellerProducts,
 } from "../controllers/product.controller.js";
 import { isSeller } from "../middlewares/auth.middleware.js";
-import { createProductValidator } from "../validators/product.validator.js";
+import {
+  addProductVariantValidator,
+  createProductValidator,
+} from "../validators/product.validator.js";
 const productRouter = Router();
 
 productRouter.post(
@@ -16,5 +22,7 @@ productRouter.post(
   createProduct,
 );
 productRouter.get("/seller", isSeller, getSellerProducts);
-
+productRouter.get("/", getAllProducts);
+productRouter.get("/:id", getProductById);
+// productRouter.post("/:id/variants", upload.array("variantImages", 6), isSeller, addProductVariantValidator, addProductVariant);
 export default productRouter;

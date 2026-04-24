@@ -189,6 +189,7 @@ const CreateProduct = () => {
                 </select>
               </div>
             </div>
+
           </div>
 
           <aside className="space-y-5">

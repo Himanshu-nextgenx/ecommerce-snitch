@@ -35,21 +35,57 @@ export const createProduct = async (req, res) => {
   }
 };
 
+export const getSellerProducts = async (req, res) => {
+  const seller = req.user;
+  try {
+    const products = await productModel.find({ seller: seller.id });
+    res.status(200).json({
+      message: "seller product get successfully ",
+      products,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "not found  ",
+      error,
+    });
+  }
+};
 
-export const getSellerProducts = async (req,res)=>{
-const seller = req.user
-    try {
-        const products = await productModel.find({ seller : seller.id})
-        res.status(200).json({
-            message:"seller product get successfully ",
-            products
-        })
-    } catch (error) {
-        res.status(400).json({
-            message:"not found  ",error
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await productModel.find();
+    res.status(200).json({
+      message: "All product get successfully ",
+      products,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "not found  ",
+      error,
+    });
+  }
+};
+export const getProductById = async (req, res) => {
 
-        })
+  const { id } = req.params;
+  try {
+    const product = await productModel.findById(id);
+    if (!product) {   
+      return res.status(404).json({ 
 
-
+        message: "Product not found", 
+      }); 
     }
+    res.status(200).json({
+      message: "Product get successfully ",
+      product,
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: "not found  ",
+      error,
+    });
+  }
+
+
 }

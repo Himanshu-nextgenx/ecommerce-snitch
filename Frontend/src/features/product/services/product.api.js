@@ -18,3 +18,13 @@ export const createProduct = async (FormData) => {
   const response = await productApiInstance.get("/seller");
   return response.data;
 }
+export const getAllProducts = async () => {
+  const response = await productApiInstance.get("/");
+  return response.data;
+}
+
+export const getProductById = async (id) => {
+  const response = await productApiInstance.get(`/${id}`);
+  return response.data;
+}
+

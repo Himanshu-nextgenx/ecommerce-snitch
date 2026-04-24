@@ -2,10 +2,10 @@ import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 
 export const isSeller = (req, res, next) => {
-    console.log("TOKEN:", req.cookies);
+    // console.log("TOKEN:", req.cookies);
   const token = req.cookies?.token;
 
-  console.log("TOKEN FROM COOKIE:", token);
+  // console.log("TOKEN FROM COOKIE:", token);
     if (!token) {
     return res.status(401).json({
       message: "Unauthorized",

@@ -25,8 +25,32 @@ export const register = async ({
   } catch (error) {
     const validationMessage = error.response?.data?.errors?.[0]?.msg;
     const message =
-      error.response?.data?.message || validationMessage || "Registration failed";
+      error.response?.data?.message ||
+      validationMessage ||
+      "Registration failed";
 
     throw new Error(message);
   }
+};
+
+export const login = async ({ email, password }) => {
+  try {
+    const response = await authaApiInstance.post("/login", {
+      email,
+      password,
+    });
+
+    return response.data;
+  } catch (error) {
+    const validationMessage = error.response?.data?.errors?.[0]?.msg;
+    const message =
+      error.response?.data?.message || validationMessage || "Login failed";
+
+    throw new Error(message);
+  }
+};
+
+export const getMe = async () => {
+  const response = await authaApiInstance.get("/me");
+  return response.data;
 };

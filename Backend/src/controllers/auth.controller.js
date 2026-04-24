@@ -62,6 +62,25 @@ export const login = async (req, res) => {
               
 }
 
+export const getme = async (req,res)=>{
+  const user = await userModel.findById(req.user.id);
+  if(!user){  
+    return res.status(404).json({
+      message:"User not found"
+    })
+}
+res.status(200).json({
+  message:"User fetched successfully",
+  user:{
+    id: user._id,
+    email: user.email,
+    contact: user.contact,
+    fullname: user.fullname,
+    role: user.role,
+  }
+});
+}
+
 export const googleAuthCallback = async (req, res) => {
 const {id, displayName, emails,photos} = req.user;
 const email = emails[0].value;
@@ -75,7 +94,8 @@ if (!user) {
   fullname: displayName,
   
   });
-}   
+}  
+console.log(user) 
 const token = jwt.sign({ id: user._id ,role: user.role}, config.jwtSecret, {
   expiresIn: "1d",
 });

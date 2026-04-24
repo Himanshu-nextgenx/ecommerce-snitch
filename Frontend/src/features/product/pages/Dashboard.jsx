@@ -27,7 +27,7 @@ const Dashboard = () => {
     };
 
     fetchSellerProducts();
-  }, [handleGetSellerProducts]);
+  }, []);
 
   return (
     <>
@@ -79,7 +79,7 @@ const Dashboard = () => {
           </header>
 
         {isLoading && (
-          <div className="grid grid-cols-1 gap-x-8 gap-y-16 pb-24 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid auto-rows-fr grid-cols-1 gap-x-8 gap-y-16 pb-24 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 className="aspect-[4/5] animate-pulse bg-[#f5f3f0]"
@@ -121,10 +121,18 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 gap-x-8 gap-y-16 pb-24 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sellerProducts.map((product) => {
               const imageUrl = product.images?.[0]?.url || "/snitch_editorial_warm.png";
+              const variants = product.variants || [];
+              const totalStock = variants.reduce(
+                (sum, variant) => sum + (Number(variant?.stock) || 0),
+                0,
+              );
+              const sizeLabel = variants.length
+                ? variants.map((variant) => variant.size).join(", ")
+                : "No sizes";
 
               return (
                 <article
-                  className="group flex cursor-pointer flex-col"
+                  className="group flex h-full cursor-pointer flex-col"
                   key={product._id}
                   onClick={() => navigate(`/seller/product/${product._id}`)}
                 >
@@ -136,21 +144,30 @@ const Dashboard = () => {
                     />
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex min-h-[8.5rem] flex-1 flex-col gap-2">
                     <div className="flex items-start justify-between gap-4">
                       <h2
-                        className="text-xl leading-snug text-[#1b1c1a] transition-colors duration-300 group-hover:text-[#C9A96E]"
+                        className="line-clamp-2 min-h-[3.4rem] text-xl leading-snug text-[#1b1c1a] transition-colors duration-300 group-hover:text-[#C9A96E]"
                         style={{ fontFamily: "'Cormorant Garamond', serif" }}
                       >
                         {product.title}
                       </h2>
                     </div>
 
-                    <p className="line-clamp-2 text-[12px] leading-relaxed text-[#7A6E63]">
+                    <p className="line-clamp-2 min-h-[2.4rem] text-[12px] leading-relaxed text-[#7A6E63]">
                       {product.description}
                     </p>
 
-                    <div className="mt-2">
+                    <div className="flex flex-wrap gap-2 pt-2 text-[10px] font-medium uppercase tracking-[0.18em]">
+                      <span className="border border-[#E5DED4] px-2 py-1 text-[#1b1c1a]">
+                        {variants.length ? `${totalStock} in stock` : "No stock data"}
+                      </span>
+                      <span className="border border-[#E5DED4] px-2 py-1 text-[#7A6E63]">
+                        {sizeLabel}
+                      </span>
+                    </div>
+
+                    <div className="mt-auto pt-2">
                       <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#1b1c1a]">
                         {product.price?.currency}{" "}
                         {product.price?.amount?.toLocaleString()}

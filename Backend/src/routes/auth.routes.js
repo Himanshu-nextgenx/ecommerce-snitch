@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { registerValidator,loginValidator } from "../validators/auth.validator.js";
-import { register,login ,googleAuthCallback } from "../controllers/auth.controller.js";
+import { register,login ,googleAuthCallback, getme } from "../controllers/auth.controller.js";
 import passport from "passport";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
 const authRouter = Router();
 
 authRouter.post("/register",registerValidator,register)
 authRouter.post("/login", loginValidator, login)
+authRouter.get("/me",authMiddleware,getme)
 
 
 
