@@ -5,6 +5,7 @@ import {
   createProduct,
   getAllProducts,
   getProductById,
+  addProductVariant,
 } from "../services/product.api.js";
 import { useDispatch } from "react-redux";
 
@@ -16,18 +17,21 @@ export const useProduct = () => {
     const data = await getSellerProducts();
 
     dispatch(setSellerProducts(data));
+    return data;
   };
 
   const handleCreateProduct = async (formData) => {
     const data = await createProduct(formData);
 
     dispatch(setProducts(data));
+    return data.product;
   };
 
   const handleGetAllProducts = async () => {
     const data = await getAllProducts();
 
     dispatch(setProducts(data));
+    return data.products;
   };
 
   const handleGetProductById = async (id) => {
@@ -36,10 +40,18 @@ export const useProduct = () => {
     dispatch(setProducts(data));
   };
 
+const handleAddProductVariant = async (productId, variantData) => {
+  const data = await addProductVariant(productId, variantData);
+
+  dispatch(setProducts(data.product));
+  return data.product;
+}
+
   return {
     handleGetSellerProducts,
     handleCreateProduct,
     handleGetAllProducts,
     handleGetProductById,
+    handleAddProductVariant
   };
 };

@@ -5,7 +5,7 @@ import { useProduct } from "../hook/useProduct.js";
 import { useNavigate } from "react-router";
 
 const Home = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const products = useSelector((state) => state.product.products);
   const user = useSelector((state) => state.auth.user);
   const authLoading = useSelector((state) => state.auth.loading);
@@ -26,7 +26,7 @@ const Home = () => {
     };
 
     fetchProducts();
-  }, [handleGetAllProducts]);
+  }, []);
 
   const productList = useMemo(() => {
     if (Array.isArray(products)) return products;
@@ -160,10 +160,10 @@ const Home = () => {
                   : "No sizes";
 
                 return (
-                  <article onClick={()=>navigate(`/product/${product._id}`)}
-                  className="group flex h-full flex-col cursor-pointer" key={product._id}>
-                    <div  
-                    className="aspect-[4/5] overflow-hidden bg-[#f5f3f0]">
+                  <article onClick={() => navigate(`/product/${product._id}`)}
+                    className="group flex h-full flex-col cursor-pointer" key={product._id}>
+                    <div
+                      className="aspect-[4/5] overflow-hidden bg-[#f5f3f0]">
                       <img
                         alt={product.title}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-105"

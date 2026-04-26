@@ -49,25 +49,22 @@ const productSchema = new mongoose.Schema(
 
         size: {
           type: String,
-          required: true,
           enum: ["S", "M", "L", "XL"],
         },
         stock: {
           type: Number,
-          required: true,
+         default: 0,
         },
-        attribute: {
+        attributes: {
           type: Map,
           of: String,
         },
         price: {
           amount: {
             type: Number,
-            required: true,
           },
           currency: {
             type: String,
-            required: true,
             enum: ["USD", "EUR", "GBP", "JPY", "INR"],
           },
         },

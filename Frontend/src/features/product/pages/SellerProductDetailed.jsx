@@ -3,27 +3,23 @@ import { useNavigate, useParams } from "react-router";
 import { useSelector } from "react-redux";
 import { useProduct } from "../hook/useProduct.js";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const INITIAL_VARIANT_FORM = {
-  size: "M",
+const INITIAL_FORM = {
+  sizes: [],
   stock: "",
-  variantPriceAmount: "",
-  variantPriceCurrency: "INR",
+  priceAmount: "",
   attributeKey: "",
   attributeValue: "",
 };
 
 const SIZE_OPTIONS = ["S", "M", "L", "XL"];
-const CURRENCY_OPTIONS = ["INR", "USD", "EUR", "GBP", "JPY"];
 const MAX_IMAGES = 6;
 
-// ─── Pure helpers ─────────────────────────────────────────────────────────────
-
 const formatPrice = (price) => {
-  if (!price?.amount || !price?.currency) return "Price unavailable";
+  if (!price?.amount) return "Price unavailable";
+
   return new Intl.NumberFormat("en-IN", {
-    currency: price.currency,
+    currency: price.currency || "INR",
+    maximumFractionDigits: 0,
     style: "currency",
   }).format(price.amount);
 };
@@ -31,139 +27,192 @@ const formatPrice = (price) => {
 const attributesToObject = (attributes) =>
   attributes.reduce((acc, { key, value }) => ({ ...acc, [key]: value }), {});
 
-// ─── Shared style helpers ─────────────────────────────────────────────────────
+const getProductFromState = (products, id) => {
+  if (Array.isArray(products)) {
+    return products.find((product) => product._id === id) || null;
+  }
 
-const inputCls =
-  "w-full rounded-lg border border-stone-200 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-stone-400 focus:border-stone-900";
-const labelCls = "mb-2 block text-sm font-medium text-stone-800";
+  return products?.product || products || null;
+};
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const isColorKey = (key) =>
+  ["color", "colour"].includes(key?.toLowerCase()?.trim());
 
-const LoadingSkeleton = () => (
-  <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-    <div className="h-96 animate-pulse rounded-2xl bg-stone-200" />
-    <div className="space-y-4">
-      <div className="h-6 w-32 animate-pulse rounded bg-stone-200" />
-      <div className="h-14 w-full animate-pulse rounded bg-stone-200" />
-      <div className="h-24 w-full animate-pulse rounded bg-stone-200" />
-    </div>
-  </div>
-);
+/* ------------------------------------------------------------------ */
+/* Attribute renderer – color key → swatch, others → chip             */
+/* ------------------------------------------------------------------ */
+const AttributeChip = ({ attrKey, value }) => {
+  if (isColorKey(attrKey)) {
+    return (
+      <span
+        title={`${attrKey}: ${value}`}
+        style={{ backgroundColor: value }}
+        className="inline-block h-4 w-4 rounded-full border border-stone-300 flex-shrink-0"
+      />
+    );
+  }
 
-const StatusMessage = ({ status, className = "" }) => {
-  if (!status.message) return null;
   return (
-    <p
-      className={`rounded-xl px-4 py-3 text-sm ${
-        status.type === "success"
-          ? "bg-stone-100 text-stone-700"
-          : "bg-red-50 text-red-700"
-      } ${className}`}
-    >
-      {status.message}
-    </p>
+    <span className="inline-flex items-center rounded border border-stone-200 bg-stone-50 px-1.5 py-0.5 text-[10px] leading-none text-stone-600">
+      <span className="font-medium text-stone-500">{attrKey}:&nbsp;</span>
+      {value}
+    </span>
   );
 };
 
-const VariantCard = ({ variant, productTitle, fallbackImage }) => {
-  const previewImage =
-    variant.images?.[0]?.url || fallbackImage || "/snitch_editorial_warm.png";
-  const variantAttributes = Object.entries(variant.attribute || {});
+/* ------------------------------------------------------------------ */
+/* Form attribute chip – with × remove button                         */
+/* ------------------------------------------------------------------ */
+const FormAttributeChip = ({ attrKey, value, onRemove }) => {
+  if (isColorKey(attrKey)) {
+    return (
+      <button
+        type="button"
+        onClick={onRemove}
+        title={`Remove ${attrKey}: ${value}`}
+        className="group inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-2 py-1 text-xs text-stone-600 hover:border-red-300 hover:bg-red-50"
+      >
+        <span
+          style={{ backgroundColor: value }}
+          className="h-3 w-3 rounded-full border border-stone-300 flex-shrink-0"
+        />
+        <span className="font-medium">{value}</span>
+        <span className="text-stone-400 group-hover:text-red-500">×</span>
+      </button>
+    );
+  }
 
   return (
-    <article className="overflow-hidden rounded-[1.25rem] border border-stone-200 bg-stone-50">
-      <div className="aspect-[4/3] bg-stone-200">
+    <button
+      type="button"
+      onClick={onRemove}
+      className="group inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[11px] text-stone-600 hover:border-red-300 hover:bg-red-50"
+    >
+      <span className="font-medium text-stone-500">{attrKey}:&nbsp;</span>
+      {value}
+      <span className="ml-0.5 text-stone-400 group-hover:text-red-500">×</span>
+    </button>
+  );
+};
+
+const FieldLabel = ({ children, htmlFor }) => (
+  <label
+    className="mb-1 block text-xs font-medium text-stone-600"
+    htmlFor={htmlFor}
+  >
+    {children}
+  </label>
+);
+
+/* ------------------------------------------------------------------ */
+/* Variant Card – compact, consistent height                           */
+/* ------------------------------------------------------------------ */
+const VariantCard = ({ variant, fallbackImage, fallbackPrice }) => {
+  const image = variant.images?.[0]?.url || fallbackImage || "/fallback.png";
+  const attributes = Object.entries(variant.attributes || variant.attribute || {});
+  const price = variant.price?.amount ? variant.price : fallbackPrice;
+
+  const colorAttrs = attributes.filter(([k]) => isColorKey(k));
+  const otherAttrs = attributes.filter(([k]) => !isColorKey(k));
+
+  return (
+    <article className="flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white">
+      {/* Image – reduced from aspect-[4/3] */}
+      <div className="relative h-32 flex-shrink-0 bg-stone-100">
         <img
-          alt={`${productTitle} ${variant.size}`}
+          alt={`Variant ${variant.size || "one size"}`}
           className="h-full w-full object-cover"
-          src={previewImage}
+          src={image}
         />
+        {/* Size badge overlaid on image */}
+        <span className="absolute left-2 top-2 rounded bg-white/90 px-1.5 py-0.5 text-[11px] font-semibold text-stone-900 shadow-sm backdrop-blur-sm">
+          {variant.size || "One"}
+        </span>
       </div>
-      <div className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-700">
-            Size {variant.size}
-          </span>
-          <span className="text-sm font-medium text-stone-900">
-            Stock {variant.stock}
+
+      {/* Body */}
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-sm font-semibold text-stone-900">
+            {formatPrice(price)}
+          </p>
+          <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">
+            Stock&nbsp;{Number(variant.stock) || 0}
           </span>
         </div>
-        <p className="text-sm font-semibold text-stone-900">
-          {formatPrice(variant.price)}
-        </p>
-        {variantAttributes.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {variantAttributes.map(([key, value]) => (
-              <span
-                className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-[11px] text-stone-600"
-                key={key}
-              >
-                {key}: {value}
-              </span>
+
+        {/* Attributes */}
+        {attributes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1">
+            {colorAttrs.map(([k, v]) => (
+              <AttributeChip key={k} attrKey={k} value={v} />
+            ))}
+            {otherAttrs.map(([k, v]) => (
+              <AttributeChip key={k} attrKey={k} value={v} />
             ))}
           </div>
         )}
-        <p className="text-xs text-stone-500">
-          {variant.images?.length || 0} variant image
-          {variant.images?.length === 1 ? "" : "s"}
-        </p>
       </div>
     </article>
   );
 };
 
+/* ------------------------------------------------------------------ */
+/* Variant Form                                                         */
+/* ------------------------------------------------------------------ */
 const VariantForm = ({ productId, onSuccess, onClose }) => {
-  const { handleAddProductVariant } = useProduct();
-  const [form, setForm] = useState(INITIAL_VARIANT_FORM);
+  const { handleAddProductVariant, handleGetProductById } = useProduct();
+  const [form, setForm] = useState(INITIAL_FORM);
   const [images, setImages] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [status, setStatus] = useState({ type: "", message: "" });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Sync image previews whenever images change
-  useEffect(() => {
-    const urls = images.map((img) => URL.createObjectURL(img));
-    setImagePreviews(urls);
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, [images]);
+  const setField = (name, value) =>
+    setForm((current) => ({ ...current, [name]: value }));
 
-  const handleInputChange = ({ target: { name, value } }) =>
-    setForm((prev) => ({ ...prev, [name]: value }));
-
-  const handleImagesChange = ({ target }) => {
-    const selected = Array.from(target.files || []);
-    const merged = [...images, ...selected].slice(0, MAX_IMAGES);
-    setImages(merged);
-    if (selected.length + images.length > MAX_IMAGES) {
-      setStatus({ type: "error", message: `You can upload up to ${MAX_IMAGES} variant images.` });
-    }
-    target.value = "";
+  const toggleSize = (size) => {
+    setForm((current) => ({
+      ...current,
+      sizes: current.sizes.includes(size)
+        ? current.sizes.filter((item) => item !== size)
+        : [...current.sizes, size],
+    }));
   };
 
-  const removeImage = (index) =>
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const handleFiles = (event) => {
+    const files = Array.from(event.target.files || []);
+    setImages((current) => [...current, ...files].slice(0, MAX_IMAGES));
+    event.target.value = "";
+  };
+
+  const removeImage = (index) => {
+    setImages((current) => current.filter((_, i) => i !== index));
+  };
 
   const addAttribute = () => {
     const key = form.attributeKey.trim();
     const value = form.attributeValue.trim();
+
     if (!key || !value) {
-      setStatus({ type: "error", message: "Add both an attribute key and value." });
+      setStatus({ type: "error", message: "Add both attribute key and value." });
       return;
     }
-    setAttributes((prev) => [
-      ...prev.filter((a) => a.key.toLowerCase() !== key.toLowerCase()),
+
+    setAttributes((current) => [
+      ...current.filter((item) => item.key.toLowerCase() !== key.toLowerCase()),
       { key, value },
     ]);
-    setForm((prev) => ({ ...prev, attributeKey: "", attributeValue: "" }));
+    setField("attributeKey", "");
+    setField("attributeValue", "");
     setStatus({ type: "", message: "" });
   };
 
   const removeAttribute = (key) =>
-    setAttributes((prev) => prev.filter((a) => a.key !== key));
+    setAttributes((current) => current.filter((item) => item.key !== key));
 
-  const reset = () => {
-    setForm(INITIAL_VARIANT_FORM);
+  const resetForm = () => {
+    setForm(INITIAL_FORM);
     setImages([]);
     setAttributes([]);
     setStatus({ type: "", message: "" });
@@ -171,430 +220,420 @@ const VariantForm = ({ productId, onSuccess, onClose }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setIsSubmitting(true);
+
+    if (form.sizes.length === 0) {
+      setStatus({ type: "error", message: "Select at least one size." });
+      return;
+    }
+
+    setLoading(true);
     setStatus({ type: "", message: "" });
 
-    const formData = new FormData();
-    formData.append("size", form.size);
-    formData.append("stock", form.stock);
-    formData.append("variantPriceAmount", form.variantPriceAmount);
-    formData.append("variantPriceCurrency", form.variantPriceCurrency);
-    formData.append("attributes", JSON.stringify(attributesToObject(attributes)));
-    images.forEach((img) => formData.append("variantImages", img));
-
     try {
-      await handleAddProductVariant(productId, formData);
-      reset();
-      onSuccess?.("Variant created successfully.");
-      onClose?.();
-    } catch (err) {
-      const validationMsg = err?.response?.data?.errors?.[0]?.msg;
+      await handleAddProductVariant(productId, {
+        attributes: attributesToObject(attributes),
+        images: images.map((file) => ({ file })),
+        price: form.priceAmount,
+        sizes: form.sizes,
+        stock: form.stock,
+      });
+
+      await handleGetProductById(productId);
+      resetForm();
+      onSuccess("Variant added successfully.");
+      onClose();
+    } catch (error) {
       setStatus({
         type: "error",
-        message: validationMsg || err?.response?.data?.message || "Unable to create variant.",
+        message:
+          error?.response?.data?.message ||
+          "Unable to add variant. Please try again.",
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
     <form
-      className="mt-5 grid gap-5 rounded-[1.25rem] bg-stone-50 p-4"
+      className="mt-4 space-y-4 border-t border-stone-200 pt-4"
       onSubmit={handleSubmit}
     >
-      {/* Size / Stock / Price / Currency */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <label className={labelCls} htmlFor="size">Size</label>
-          <select
-            className={inputCls}
-            id="size"
-            name="size"
-            onChange={handleInputChange}
-            required
-            value={form.size}
-          >
-            {SIZE_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+      {/* ── Sizes ───────────────────────────────────────────── */}
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-stone-600">Sizes</p>
+        <div className="flex flex-wrap gap-1.5">
+          {SIZE_OPTIONS.map((size) => {
+            const active = form.sizes.includes(size);
+            return (
+              <button
+                className={`h-8 w-8 rounded-lg border text-xs font-semibold transition ${active
+                    ? "border-stone-950 bg-stone-950 text-white"
+                    : "border-stone-300 bg-white text-stone-900 hover:border-stone-900"
+                  }`}
+                key={size}
+                onClick={() => toggleSize(size)}
+                type="button"
+              >
+                {size}
+              </button>
+            );
+          })}
         </div>
+      </div>
 
+      {/* ── Stock & Price ────────────────────────────────────── */}
+      <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelCls} htmlFor="stock">Stock</label>
+          <FieldLabel htmlFor="stock">Stock</FieldLabel>
           <input
-            className={inputCls}
+            className="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-stone-900"
             id="stock"
             min="0"
-            name="stock"
-            onChange={handleInputChange}
-            placeholder="12"
-            required
+            onChange={(event) => setField("stock", event.target.value)}
+            placeholder="0"
             type="number"
             value={form.stock}
           />
         </div>
-
         <div>
-          <label className={labelCls} htmlFor="variantPriceAmount">Variant price</label>
+          <FieldLabel htmlFor="priceAmount">Variant price</FieldLabel>
           <input
-            className={inputCls}
-            id="variantPriceAmount"
+            className="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-stone-900"
+            id="priceAmount"
             min="0"
-            name="variantPriceAmount"
-            onChange={handleInputChange}
-            placeholder="2499"
-            required
+            onChange={(event) => setField("priceAmount", event.target.value)}
+            placeholder="Leave empty for product price"
             step="0.01"
             type="number"
-            value={form.variantPriceAmount}
+            value={form.priceAmount}
           />
         </div>
-
-        <div>
-          <label className={labelCls} htmlFor="variantPriceCurrency">Currency</label>
-          <select
-            className={inputCls}
-            id="variantPriceCurrency"
-            name="variantPriceCurrency"
-            onChange={handleInputChange}
-            required
-            value={form.variantPriceCurrency}
-          >
-            {CURRENCY_OPTIONS.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      {/* Attributes */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className={labelCls} htmlFor="attributeKey">Attribute key</label>
-            <input
-              className={inputCls}
-              id="attributeKey"
-              name="attributeKey"
-              onChange={handleInputChange}
-              placeholder="Color"
-              type="text"
-              value={form.attributeKey}
-            />
-          </div>
-          <div>
-            <label className={labelCls} htmlFor="attributeValue">Attribute value</label>
-            <input
-              className={inputCls}
-              id="attributeValue"
-              name="attributeValue"
-              onChange={handleInputChange}
-              placeholder="Black"
-              type="text"
-              value={form.attributeValue}
-            />
-          </div>
-        </div>
-        <button
-          className="self-end rounded-lg bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700"
-          onClick={addAttribute}
-          type="button"
-        >
-          Add attribute
-        </button>
-      </div>
-
-      {attributes.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {attributes.map((attr) => (
-            <button
-              className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700"
-              key={attr.key}
-              onClick={() => removeAttribute(attr.key)}
-              type="button"
-            >
-              {attr.key}: {attr.value} ×
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Image upload */}
+      {/* ── Attributes ──────────────────────────────────────── */}
       <div>
-        <div className="mb-2 flex items-center justify-between gap-4">
-          <label className={labelCls} htmlFor="variantImages">Variant images</label>
-          <span className="text-xs text-stone-500">{images.length}/{MAX_IMAGES} uploaded</span>
+        <p className="mb-1.5 text-xs font-medium text-stone-600">Attributes</p>
+        <div className="flex gap-2">
+          <input
+            className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-stone-900"
+            id="attributeKey"
+            onChange={(event) => setField("attributeKey", event.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addAttribute())}
+            placeholder="Key (e.g. Color)"
+            type="text"
+            value={form.attributeKey}
+          />
+          <input
+            className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-stone-900"
+            id="attributeValue"
+            onChange={(event) => setField("attributeValue", event.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addAttribute())}
+            placeholder="Value (e.g. Black)"
+            type="text"
+            value={form.attributeValue}
+          />
+          <button
+            className="flex-shrink-0 rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-900 hover:border-stone-900"
+            onClick={addAttribute}
+            type="button"
+          >
+            Add
+          </button>
         </div>
-        <label
-          className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white px-4 py-6 text-center transition hover:border-stone-900"
-          htmlFor="variantImages"
-        >
-          <span className="text-sm font-medium text-stone-900">Upload variant images</span>
-          <span className="mt-2 text-xs leading-5 text-stone-500">
-            Add close-ups or color-specific images for this variant.
+
+        {attributes.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {attributes.map((attr) => (
+              <FormAttributeChip
+                key={attr.key}
+                attrKey={attr.key}
+                value={attr.value}
+                onRemove={() => removeAttribute(attr.key)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Images ──────────────────────────────────────────── */}
+      <div>
+        <div className="mb-1.5 flex items-center justify-between">
+          <FieldLabel htmlFor="variantImages">Images</FieldLabel>
+          <span className="text-xs text-stone-400">
+            {images.length}/{MAX_IMAGES}
           </span>
+        </div>
+
+        {images.length < MAX_IMAGES && (
           <input
             accept="image/*"
-            className="sr-only"
-            disabled={images.length >= MAX_IMAGES}
+            className="block w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm text-stone-600 file:mr-3 file:rounded file:border-0 file:bg-stone-100 file:px-2 file:py-0.5 file:text-xs file:font-medium file:text-stone-700"
             id="variantImages"
             multiple
-            name="variantImages"
-            onChange={handleImagesChange}
+            onChange={handleFiles}
             type="file"
           />
-        </label>
+        )}
+
+        {images.length > 0 && (
+          <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-6">
+            {images.map((img, i) => (
+              <div
+                key={i}
+                className="group relative aspect-square overflow-hidden rounded-lg border border-stone-200 bg-stone-50"
+              >
+                <img
+                  src={URL.createObjectURL(img)}
+                  alt={img.name}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100"
+                  title="Remove"
+                >
+                  <span className="text-base font-bold text-white leading-none">×</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {imagePreviews.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {imagePreviews.map((preview, index) => (
-            <div
-              className="group relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-white"
-              key={preview}
-            >
-              <img
-                alt={`Variant preview ${index + 1}`}
-                className="h-full w-full object-cover"
-                src={preview}
-              />
-              <button
-                className="absolute right-2 top-2 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-stone-900 opacity-0 shadow-sm transition group-hover:opacity-100"
-                onClick={() => removeImage(index)}
-                type="button"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
+      {/* ── Status ──────────────────────────────────────────── */}
+      {status.message && (
+        <p
+          className={`rounded-lg px-3 py-2 text-xs ${status.type === "error"
+              ? "bg-red-50 text-red-700"
+              : "bg-stone-100 text-stone-700"
+            }`}
+        >
+          {status.message}
+        </p>
       )}
 
-      <StatusMessage status={status} />
-
-      <div className="flex justify-end gap-3">
+      {/* ── Actions ─────────────────────────────────────────── */}
+      <div className="flex justify-end gap-2 pt-1">
         <button
-          className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:border-red-300 hover:bg-red-50"
-          onClick={reset}
+          className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs text-stone-700 hover:border-stone-500"
+          onClick={resetForm}
           type="button"
         >
-          Delete fields
+          Reset
         </button>
         <button
-          className="rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 transition hover:border-stone-900 hover:text-stone-900"
+          className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs text-stone-700 hover:border-stone-500"
           onClick={onClose}
           type="button"
         >
           Cancel
         </button>
         <button
-          className="rounded-lg bg-stone-950 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-300"
-          disabled={isSubmitting}
+          className="rounded-lg bg-stone-950 px-4 py-1.5 text-xs font-medium text-white disabled:bg-stone-300"
+          disabled={loading}
           type="submit"
         >
-          {isSubmitting ? "Creating variant..." : "Save variant"}
+          {loading ? "Saving…" : "Add variant"}
         </button>
       </div>
     </form>
   );
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
+/* ================================================================== */
+/* Main page                                                           */
+/* ================================================================== */
 const SellerProductDetailed = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const products = useSelector((state) => state.product.products);
   const { handleGetProductById } = useProduct();
+  const products = useSelector((state) => state.product.products);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isVariantFormOpen, setIsVariantFormOpen] = useState(false);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const loadProduct = async () => {
       try {
         setError("");
         await handleGetProductById(id);
-      } catch (err) {
-        setError(err?.response?.data?.message || "Unable to load product.");
+      } catch (loadError) {
+        setError(
+          loadError?.response?.data?.message || "Unable to load product.",
+        );
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    fetchProduct();
+
+    loadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const product = useMemo(() => {
-    if (Array.isArray(products)) {
-      return products.find((item) => item._id === id) || products[0] || null;
-    }
-    return products?.product || null;
-  }, [products, id]);
+  const product = useMemo(
+    () => getProductFromState(products, id),
+    [products, id],
+  );
 
   const variants = product?.variants || [];
-  const totalStock = variants.reduce((sum, v) => sum + (Number(v?.stock) || 0), 0);
-  const sizeLabel = variants.length
-    ? variants.map((v) => v.size).join(", ")
-    : "No variants";
+  const totalStock = variants.reduce(
+    (sum, variant) => sum + (Number(variant?.stock) || 0),
+    0,
+  );
+  const fallbackImage = product?.images?.[0]?.url;
 
-  const handleVariantSuccess = (message) => setSuccessMessage(message);
+  /* ── Loading / error states ──────────────────────────────── */
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stone-50">
+        <p className="text-sm text-stone-400">Loading product…</p>
+      </main>
+    );
+  }
 
-  const toggleForm = () => {
-    setSuccessMessage("");
-    setIsVariantFormOpen((prev) => !prev);
-  };
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stone-50">
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+      </main>
+    );
+  }
+
+  if (!product) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stone-50">
+        <p className="text-sm text-stone-400">Product not found.</p>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-6 text-stone-900 sm:px-6 lg:px-8">
-      <section className="mx-auto max-w-5xl">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between border-b border-stone-200 pb-4">
+    <main className="min-h-screen bg-stone-50 px-4 py-5 text-stone-950">
+      <section className="mx-auto max-w-4xl space-y-4">
+
+        {/* ── Top bar ─────────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
           <button
-            className="text-sm text-stone-600 transition hover:text-stone-900"
+            className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-950"
             onClick={() => navigate(-1)}
             type="button"
           >
-            Back
+            ← Back
           </button>
-          <span className="text-xs font-semibold uppercase tracking-[0.28em] text-stone-500">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-stone-400">
             Seller View
           </span>
         </div>
 
-        {isLoading && <LoadingSkeleton />}
-
-        {!isLoading && error && (
-          <div className="rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        {!isLoading && !error && product && (
-          <div className="space-y-6">
-            {/* Product summary */}
-            <div className="rounded-[1.5rem] border border-stone-200 bg-white p-4 shadow-sm">
-              <div className="grid gap-5 lg:grid-cols-[220px_1fr] lg:items-start">
-                <div className="overflow-hidden rounded-[1.25rem] bg-stone-100">
-                  <img
-                    alt={product.title}
-                    className="aspect-[4/5] h-full w-full object-cover"
-                    src={product.images?.[0]?.url || "/snitch_editorial_warm.png"}
-                  />
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-                      Seller Product
-                    </p>
-                    <h1 className="mt-2 text-2xl font-semibold leading-snug text-stone-900">
-                      {product.title}
-                    </h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
-                      {product.description}
-                    </p>
-                    <p className="mt-4 text-lg font-semibold text-stone-900">
-                      {formatPrice(product.price)}
-                    </p>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      { label: "Variants", value: variants.length },
-                      { label: "Total Stock", value: totalStock },
-                      { label: "Sizes", value: sizeLabel, small: true },
-                    ].map(({ label, value, small }) => (
-                      <div
-                        key={label}
-                        className="rounded-[1.25rem] border border-stone-200 bg-stone-50 p-4"
-                      >
-                        <p className="text-[11px] uppercase tracking-[0.22em] text-stone-500">
-                          {label}
-                        </p>
-                        <p className={`mt-2 font-semibold text-stone-900 ${small ? "text-sm" : "text-xl"}`}>
-                          {value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+        {/* ── Product info card ────────────────────────────────── */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-4">
+          <div className="grid gap-4 md:grid-cols-[160px_1fr]">
+            <div className="overflow-hidden rounded-xl bg-stone-100">
+              <img
+                alt={product.title}
+                className="aspect-[3/4] h-full w-full object-cover"
+                src={fallbackImage || "/fallback.png"}
+              />
             </div>
-
-            {/* Variant actions */}
-            <div className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-3 border-b border-stone-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-                    Variant Actions
-                  </p>
-                  <h2 className="mt-1.5 text-xl font-semibold text-stone-900">
-                    Manage product variants
-                  </h2>
-                  <p className="mt-2 text-sm text-stone-500">
-                    Add a new size, stock, price, and images only when needed.
-                  </p>
-                </div>
-                <button
-                  className={`inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition ${
-                    isVariantFormOpen
-                      ? "bg-stone-900 text-white"
-                      : "border border-stone-300 bg-white text-stone-900 hover:border-stone-900"
-                  }`}
-                  onClick={toggleForm}
-                  type="button"
-                >
-                  {isVariantFormOpen ? "Close variant form" : "Add variant"}
-                </button>
-              </div>
-
-              {successMessage && !isVariantFormOpen && (
-                <p className="mt-4 rounded-xl bg-stone-100 px-4 py-3 text-sm text-stone-700">
-                  {successMessage}
-                </p>
-              )}
-
-              {isVariantFormOpen && (
-                <VariantForm
-                  productId={id}
-                  onSuccess={handleVariantSuccess}
-                  onClose={() => setIsVariantFormOpen(false)}
-                />
-              )}
-            </div>
-
-            {/* Variant inventory */}
-            <div className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-2.5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
-                  Variant Inventory
+                <h1 className="text-xl font-semibold leading-tight">{product.title}</h1>
+                <p className="mt-1 max-w-prose text-sm leading-5 text-stone-500">
+                  {product.description}
                 </p>
-                <h2 className="mt-1.5 text-xl font-semibold text-stone-900">
-                  Sizes, stock, price, and attributes
-                </h2>
               </div>
+              <p className="text-base font-semibold">{formatPrice(product.price)}</p>
 
-              {variants.length === 0 ? (
-                <p className="mt-6 rounded-2xl bg-stone-100 px-4 py-5 text-sm text-stone-600">
-                  No variant data is available for this product yet.
-                </p>
-              ) : (
-                <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {variants.map((variant, index) => (
-                    <VariantCard
-                      key={`${variant.size}-${index}`}
-                      variant={variant}
-                      productTitle={product.title}
-                      fallbackImage={product.images?.[0]?.url}
-                    />
-                  ))}
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-stone-50 px-3 py-2">
+                  <p className="text-[10px] text-stone-400">Variants</p>
+                  <p className="text-lg font-semibold">{variants.length}</p>
                 </div>
-              )}
+                <div className="rounded-lg bg-stone-50 px-3 py-2">
+                  <p className="text-[10px] text-stone-400">Total stock</p>
+                  <p className="text-lg font-semibold">{totalStock}</p>
+                </div>
+                <div className="rounded-lg bg-stone-50 px-3 py-2">
+                  <p className="text-[10px] text-stone-400">Sizes</p>
+                  <p className="text-sm font-semibold leading-tight">
+                    {variants.map((v) => v.size).filter(Boolean).join(", ") || "None"}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* ── Manage variants card ─────────────────────────────── */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Manage variants</h2>
+              <p className="text-xs text-stone-500">
+                Add stock, size, attributes, and optional variant images.
+              </p>
+            </div>
+            <button
+              className="flex-shrink-0 rounded-full border border-stone-300 px-3 py-1.5 text-xs font-medium hover:border-stone-950"
+              onClick={() => {
+                setMessage("");
+                setFormOpen((current) => !current);
+              }}
+              type="button"
+            >
+              {formOpen ? "Close" : "Add variant"}
+            </button>
+          </div>
+
+          {message && !formOpen && (
+            <p className="mt-3 rounded-lg bg-stone-100 px-3 py-2 text-xs text-stone-700">
+              {message}
+            </p>
+          )}
+
+          {formOpen && (
+            <VariantForm
+              productId={id}
+              onClose={() => setFormOpen(false)}
+              onSuccess={setMessage}
+            />
+          )}
+        </div>
+
+        {/* ── All variants card ────────────────────────────────── */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-4">
+          <h2 className="mb-3 text-base font-semibold">
+            All variants
+            {variants.length > 0 && (
+              <span className="ml-2 text-xs font-normal text-stone-400">
+                ({variants.length})
+              </span>
+            )}
+          </h2>
+
+          {variants.length === 0 ? (
+            <p className="rounded-xl bg-stone-50 px-4 py-5 text-center text-sm text-stone-400">
+              No variants yet. Add one above.
+            </p>
+          ) : (
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+              {variants.map((variant, index) => (
+                <VariantCard
+                  fallbackImage={fallbackImage}
+                  fallbackPrice={product.price}
+                  key={`${variant.size || "variant"}-${index}`}
+                  variant={variant}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
       </section>
     </main>
   );
